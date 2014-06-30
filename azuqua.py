@@ -11,11 +11,11 @@ class Azuqua(object):
 
 	ROUTES = {
 		"list": {
-			"path": "/api/account/flos",
+			"path": "/account/flos",
 			"method": "get"
 		},
 		"invoke": {
-			"path": "/api/flo/:id/invoke",
+			"path": "/flo/:id/invoke",
 			"method": "post"
 		}
 	}
