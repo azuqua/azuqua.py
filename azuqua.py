@@ -6,17 +6,37 @@ import datetime
 import copy
 import hashlib
 import urllib
+import pickle
 
 class Azuqua(object):
-
 	ROUTES = {
+		"hypermedia_routes": {
+			"path": "/",
+			"method": "get"
+		},
+		"login": {
+			"path": "/org/login",
+			"method": "post"
+		},
 		"list": {
-			"path": "/account/flos",
+			"path": "/org/flos",
 			"method": "get"
 		},
 		"invoke": {
 			"path": "/flo/:id/invoke",
 			"method": "post"
+		},
+		"read": {
+			"path":"/flo/:id/read",
+			"method":"get"
+		},
+		"enable": {
+			"path": "/flo/:id/enable",
+			"method": "get"
+		},
+		"disable": {
+			"path": "/flo/:id/disable",
+			"method": "get"
 		}
 	}
 
@@ -27,17 +47,18 @@ class Azuqua(object):
 			"Accept": "*/*"
 		}
 	}
- 
-	def __init__(self, accessKey, accessSecret):
+
+	def __init__(self, accessKey="", accessSecret="", HTTP_OPTIONS={}):
 		self.accessKey = accessKey
 		self.accessSecret = accessSecret
 		self.floCache = None
+		self.HTTP_OPTIONS.update(HTTP_OPTIONS)
 
 	def sign_data(self, secret, data, verb, path, timestamp):
 		if isinstance(data, dict):
-			data = str(json.dumps(data, separators=(',', ':')))
-		meta = str(":".join([verb.lower(), path, timestamp]))
-		return hmac.new(secret, meta + data, hashlib.sha256).hexdigest()
+			data = json.dumps(data, separators=(',', ':'))
+		meta = ":".join([verb.lower(), path, timestamp])
+		return hmac.new(str(secret), str(meta + data), hashlib.sha256).hexdigest()
 
 	def make_request(self, path, verb, data):
 		if data is None or len(data) < 1:
@@ -56,7 +77,6 @@ class Azuqua(object):
 			resp = requests.post(Azuqua.HTTP_OPTIONS["host"] + path, data=json.dumps(data, separators=(',', ':')), headers=headers)
 			return resp.json() or resp.text
 
-
 	def account(self):
 		return { 
 			"accessKey": self.accessKey,
@@ -65,6 +85,9 @@ class Azuqua(object):
 
 	def create_flo(self, name, alias):
 		return Azuqua.Flo(self, name, alias)
+
+	def create_org(self, name, key, secret):
+		return Azuqua.Org(name, key, secret)
 
 	def flos(self, refresh=False):
 		if refresh or self.floCache is None:
@@ -75,8 +98,13 @@ class Azuqua(object):
 				self.floCache = map(lambda curr: self.create_flo(curr["name"], curr["alias"]), resp)
 		return self.floCache
 
-	class Flo(object):
+	def login(self, userLoginInformation):
+		resp = self.make_request(Azuqua.ROUTES["login"]["path"], Azuqua.ROUTES["login"]["method"], userLoginInformation);
+		if isinstance(resp, dict) and "error" in resp:
+			raise Exception(resp["error"] or "Error listing flos")
+		return map(lambda curr: self.create_org(curr["name"], curr["access_key"], curr["access_secret"]), resp)
 
+	class Flo(object):
 		def __init__(self, wrapper, name, alias):
 			self.name = name
 			self.alias = alias
@@ -89,3 +117,38 @@ class Azuqua(object):
 				raise Exception(resp["error"] or "Error invoking flo")
 			else:
 				return resp
+
+		def read(self):
+			path = Azuqua.ROUTES["read"]["path"].replace(":id", self.alias)
+			resp = self.wrapper.make_request(path, Azuqua.ROUTES["read"]["method"], '')
+			if isinstance(resp, dict) and "error" in resp:
+				raise Exception(resp["error"] or "Error invoking flo")
+			else:
+				return resp
+
+		def enable(self):
+			path = Azuqua.ROUTES["enable"]["path"].replace(":id", self.alias)
+			resp = self.wrapper.make_request(path, Azuqua.ROUTES["enable"]["method"], '')
+			if isinstance(resp, dict) and "error" in resp:
+				raise Exception(resp["error"] or "Error invoking flo")
+			else:
+				return resp
+
+		def disable(self):
+			path = Azuqua.ROUTES["disable"]["path"].replace(":id", self.alias)
+			resp = self.wrapper.make_request(path, Azuqua.ROUTES["disable"]["method"], '')
+			if isinstance(resp, dict) and "error" in resp:
+				raise Exception(resp["error"] or "Error invoking flo")
+			else:
+				return resp
+
+	class Org(object):
+		def __init__ (self, name, key, secret):
+			self.name = str(name)
+			self.key = str(key)
+			self.secret = str(secret)
+			self.azuqua = Azuqua(key, secret)
+
+		def flos(self, refresh=True):
+			flos = self.azuqua.flos()
+			return flos
