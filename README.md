@@ -27,7 +27,7 @@ PASSWORD = os.getenv('AZUQUA_PASSWORD')
 
 azuquaObject = azuqua.Azuqua()
 
-# login returns a list of orgs
+# login returns a list of orgs associated with the username
 orgs = azuquaObject.login(EMAIL, PASSWORD)
 for org in orgs:
 	for flo in org.flos():
