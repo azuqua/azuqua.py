@@ -8,5 +8,4 @@ setup(name='Azuqua',
 	author_email='alec@azuqua.com',
 	url='http://developer.azuqua.com',
 	packages=['azuqua']
-	)
-
+)
