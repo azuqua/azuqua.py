@@ -11,7 +11,7 @@ python setup.py install
 
 ## Usage
 
-```
+```python
 import Azuqua
 
 ACCESS_KEY = "foo"
