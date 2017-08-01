@@ -10,7 +10,7 @@ import os
 class Azuqua(object):
     HTTP_OPTIONS = {
         "protocol": "https",
-        "host": "alphaapi.azuqua.com",
+        "host": "api.azuqua.com",
         "port": "443"
     }
 
