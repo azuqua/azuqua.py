@@ -7,5 +7,5 @@ setup(name='Azuqua',
 	author='Alec Embke',
 	author_email='alec@azuqua.com',
 	url='http://developer.azuqua.com',
-	packages=['azuqua']
+	packages=['Azuqua']
 )
