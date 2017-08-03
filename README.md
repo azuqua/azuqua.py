@@ -1,18 +1,28 @@
-azuqua.py
+Azuqua Python client
 =====================
 
-## Install
+[PLACEHOLDER_DESC_HERE]
+
+Requirements
+============
+
+Python > 3.0
+
+Install
+=======
+
+Clone Azuqua.py and run setup tools
+
+```bash
+git clone https://github.com/azuqua/azuqua.py/tree/feature/v2API
+```
 
 ```python
 python setup.py install
 ```
-This client is intented to be used to interact solely with version 2 (Routes prefixed with /v2/) of the Azuqua API.
 
-This library provides an easy interface for interacting with your Azuqua account and information.
-The Azuqua API is directly exposed to developers should you wish to write your own library.
-
-## Usage
-
+Usage
+=====
 ```python
 import Azuqua
 
