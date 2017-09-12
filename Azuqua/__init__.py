@@ -14,17 +14,20 @@ class Azuqua(object):
         "port": "443"
     }
 
+    INVOKE_KEYS = ('method', 'headers','query', 'body', 'files');
+
     def __init__(self, accessKey, accessSecret):
         self.accessKey = accessKey
         self.accessSecret = accessSecret
 
         curr_dir = os.path.dirname(__file__)
-        with open(os.path.join(curr_dir, "../static/routes.json")) as route_file:
+        with open(os.path.join(curr_dir, "./static/routes.json")) as route_file:
             routes = json.load(route_file)
             for _, group in routes.items():
                 for routeName, route in group.items():
                     def outer():
-                        method = route["methods"].upper()
+                        methods = route["methods"]
+                        method = methods[0].upper()
                         path = route["path"]
                         urlParams = list(filter(lambda s: s.startswith(":"), path.split("/")))
                         def inner(*args):
@@ -36,7 +39,7 @@ class Azuqua(object):
                                 last_argument = args[len(args) - 1]
                                 if isinstance(last_argument, dict):
                                     data = last_argument
-                            return self.request(new_path, method, data)
+                            return self.request(new_path, method, data, {})
                         return inner
                     setattr(self.__class__, routeName, staticmethod(outer()))
 
@@ -46,7 +49,19 @@ class Azuqua(object):
             "accessSecret": self.accessSecret
         }
 
-    def request(self, path, verb, data):
+    # headers, query, body, files, method
+    def invoke(self, alias, data):
+        method, headers, query, body, files = [data[key] for key in Azuqua.INVOKE_KEYS]
+        method = method.upper()
+        endpoint = '/v2/flo/{}/invoke'.format(alias)
+        if bool(query):
+            endpoint = endpoint + "?" + urllib.urlencode(query)
+        if method == "GET" or method == "DELETE":
+            body = ''
+
+        return self.request(endpoint, method, body, headers)
+
+    def request(self, path, verb, data, additional_headers):
         if (verb == "GET" or verb == "DELETE") and bool(data):
             querystring = urllib.urlencode(data)
             path = path + "?" + querystring
@@ -55,6 +70,8 @@ class Azuqua(object):
         headers = {
             "Content-Type": "application/json"
         }
+        for key, value in additional_headers.items():
+            headers[key] = value
         timestamp = datetime.datetime.utcnow().isoformat()
         headers["x-api-accessKey"] = self.accessKey
         headers["x-api-timestamp"] = timestamp
@@ -69,11 +86,17 @@ class Azuqua(object):
             resp = requests.delete(url, headers=headers)
             return resp.json() or resp.text
         elif verb == "PUT":
-            data = str(json.dumps(data, separators=(',', ':')))
+            if bool(data):
+                data = str(json.dumps(data, separators=(',', ':')))
+            else:
+                data = ""
             resp = requests.put(url, data=data, headers=headers)
             return resp.json() or resp.text
         else:
-            data = str(json.dumps(data, separators=(',', ':')))
+            if bool(data):
+                data = str(json.dumps(data, separators=(',', ':')))
+            else:
+                data = ""
             resp = requests.post(url, data=data, headers=headers)
             return resp.json() or resp.text
 
